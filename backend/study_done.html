@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="text-align: center;">
+    <h2>🎉 Great Job! 🎉</h2>
+    <p>You completed {{ total }} cards in this study session!</p>
+    
+    <div class="stats-grid">
+        <div class="stat-card">✅ Correct: {{ correct }}</div>
+        <div class="stat-card">📊 Accuracy: {{ acc }}%</div>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Back to Dashboard</a>
+        <a href="{{ url_for('study_select', deck_id=1) }}" class="btn btn-success">Study Again</a>
+        <button onclick="markComplete()" class="btn btn-warning">🏆 Mark as Complete</button>
+    </div>
+</div>
+
+<script>
+    function markComplete() {
+        fetch('/mark_complete/{{ deck_id }}').then(() => {
+            alert('🌟 Deck marked as complete! You earned a star!');
+            window.location.href = "{{ url_for('dashboard') }}";
+        });
+    }
+</script>
+{% endblock %}

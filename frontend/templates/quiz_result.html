@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="text-align: center; background: {{ color }}; color: white;">
+    <div style="font-size: 64px;">{{ emoji }}</div>
+    <h1>{{ message }}</h1>
+    <div class="stats" style="margin: 20px 0;">
+        <div class="stat-card" style="background: white; color: {{ color }};">
+            <div class="stat-number">{{ percentage }}%</div>
+            <div>{{ score }}/{{ total }} Correct</div>
+        </div>
+        <div class="stat-card" style="background: white; color: {{ color }};">
+            <div class="stat-number">{{ time_min }}m {{ time_sec }}s</div>
+            <div>Time Taken</div>
+        </div>
+    </div>
+    
+    <details style="margin-top: 20px;">
+        <summary style="cursor: pointer; padding: 10px; background: rgba(255,255,255,0.2); border-radius: 8px;">📝 Review Your Answers</summary>
+        {% for a in answers %}
+        <div style="background: {% if a.correct %}#d4edda{% else %}#f8d7da{% endif %}; padding: 20px; margin: 15px 0; border-radius: 10px; text-align: left; color: #333;">
+            <p><strong>Q{{ loop.index }}:</strong> {{ a.question }}</p>
+            <p><strong>Your answer:</strong> {{ a.user }}</p>
+            <p><strong>Correct answer:</strong> {{ a.correct_answer }}</p>
+            {% if not a.correct %}
+            <details style="margin-top: 10px;">
+                <summary style="cursor: pointer; color: #666;">View all options</summary>
+                <ul style="margin-top: 10px; margin-left: 20px;">
+                    {% for opt in a.options %}
+                    <li style="{% if opt == a.correct_answer %}color: #27ae60; font-weight: bold;{% endif %}">{{ opt }}</li>
+                    {% endfor %}
+                </ul>
+            </details>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </details>
+    
+    <div style="margin-top: 20px;">
+        <a href="{{ url_for('quiz_select') }}" class="btn" style="background: white; color: {{ color }};">Take Another Quiz</a>
+        <a href="{{ url_for('dashboard') }}" class="btn" style="background: white; color: {{ color }};">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

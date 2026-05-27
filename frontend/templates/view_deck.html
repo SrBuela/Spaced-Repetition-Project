@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 style="color: white;">📚 {{ deck.name }}</h1>
+        <div>
+            <button class="btn btn-success" onclick="showAddCardModal()">+ Add Card</button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Back</a>
+        </div>
+    </div>
+    
+    <!-- Deck Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ deck.cards|length }}</div>
+            <div>Total Cards</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="masteredCount">{{ deck.cards|selectattr('is_mastered', 'equalto', True)|list|length }}</div>
+            <div>Mastered</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number" id="progressPercent">{{ (deck.cards|selectattr('is_mastered', 'equalto', True)|list|length / deck.cards|length * 100)|round|int if deck.cards|length > 0 else 0 }}%</div>
+            <div>Progress</div>
+        </div>
+    </div>
+    
+    <!-- Progress Bar -->
+    <div class="card">
+        <h3>📊 Overall Progress</h3>
+        <div class="progress-bar-container">
+            <div class="progress-fill" id="progressBar" style="width: {{ (deck.cards|selectattr('is_mastered', 'equalto', True)|list|length / deck.cards|length * 100) if deck.cards|length > 0 else 0 }}%;">
+                <span id="progressText">{{ (deck.cards|selectattr('is_mastered', 'equalto', True)|list|length / deck.cards|length * 100)|round|int if deck.cards|length > 0 else 0 }}%</span>
+            </div>
+        </div>
+        <div class="text-center mt-2">
+            <small id="masteredInfo">{{ deck.cards|selectattr('is_mastered', 'equalto', True)|list|length }} of {{ deck.cards|length }} cards mastered</small>
+        </div>
+    </div>
+    
+    <!-- Quick Action Bar -->
+    <div class="card" style="background: linear-gradient(135deg, #667eea20, #764ba220);">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong>⚡ Quick Actions:</strong>
+                <button class="btn btn-sm btn-success" onclick="markAllVisibleMastered()">✓ Mark All Visible as Mastered</button>
+                <button class="btn btn-sm btn-info" onclick="studyAll()">📖 Study All</button>
+            </div>
+            <div>
+                <input type="text" id="searchInput" placeholder="🔍 Search cards..." class="form-control" style="width: 250px; display: inline-block;" onkeyup="filterCards()">
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cards List -->
+    <div class="card">
+        <h3>📝 Cards in this Deck</h3>
+        
+        {% if deck.cards %}
+            <div class="table-responsive">
+                <table class="table table-hover" id="cardsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
+                            <th>#</th>
+                            <th>Question</th>
+                            <th>Answer</th>
+                            <th>Status</th>
+                            <th>Reviews</th>
+                            <th>Avg Time</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cardsTableBody">
+                        {% for card in deck.cards %}
+                        <tr id="card-row-{{ card.id }}" data-card-id="{{ card.id }}" data-mastered="{{ card.is_mastered|lower }}">
+                            <td><input type="checkbox" class="card-checkbox" data-card-id="{{ card.id }}"></td>
+                            <td>{{ loop.index }}</td>
+                            <td><strong>{{ card.question[:50] }}{% if card.question|length > 50 %}...{% endif %}</strong></td>
+                            <td>{{ card.answer[:50] }}{% if card.answer|length > 50 %}...{% endif %}</td>
+                            <td id="status-{{ card.id }}">
+                                {% if card.is_mastered %}
+                                    <span class="badge" style="background: #27ae60; color: white;">✅ Mastered</span>
+                                {% else %}
+                                    <span class="badge" style="background: #f39c12; color: white;">📖 Learning</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ card.review_count }}</td>
+                            <td>{{ "%.1f"|format(card.avg_time) }}s</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" onclick="studyCard({{ card.id }})">Study</button>
+                                {% if not card.is_mastered %}
+                                    <button class="btn btn-sm btn-success mastered-btn" data-card-id="{{ card.id }}" onclick="markMasteredNoPopup({{ card.id }}, this)">
+                                        ⭐ Mark Mastered
+                                    </button>
+                                {% endif %}
+                                <button class="btn btn-sm btn-danger" onclick="deleteCard({{ card.id }})">Delete</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <p style="font-size: 18px; color: #666;">No cards in this deck yet!</p>
+                <button class="btn btn-primary" onclick="showAddCardModal()">➕ Add Your First Card</button>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Card Modal -->
+<div id="addCardModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div style="background: white; border-radius: 20px; padding: 30px; max-width: 500px; width: 90%;">
+        <h3 style="margin-bottom: 20px;">➕ Add New Card</h3>
+        <form action="{{ url_for('add_card', deck_id=deck.id) }}" method="POST" id="addCardForm">
+            <div class="form-group">
+                <label>Question:</label>
+                <textarea name="question" class="form-control" rows="3" required style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px;"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Answer:</label>
+                <textarea name="answer" class="form-control" rows="3" required style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px;"></textarea>
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-primary">Save Card</button>
+                <button type="button" class="btn btn-secondary" onclick="hideAddCardModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .table {
+        width: 100%;
+        background: white;
+        border-radius: 15px;
+        overflow: hidden;
+    }
+    .table th {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 12px;
+    }
+    .table td {
+        padding: 10px;
+        border-bottom: 1px solid #eee;
+        vertical-align: middle;
+    }
+    .table tr:hover {
+        background: #f5f5f5;
+    }
+    .btn-sm {
+        padding: 5px 10px;
+        font-size: 12px;
+        margin: 2px;
+    }
+    .form-group label {
+        font-weight: bold;
+        margin-bottom: 5px;
+        display: block;
+    }
+    .mastered-btn {
+        transition: all 0.3s ease;
+    }
+    .mastered-btn:active {
+        transform: scale(0.95);
+    }
+    .card-row-mastered {
+        background-color: #e8f5e9 !important;
+        opacity: 0.8;
+    }
+</style>
+
+<script>
+    // ========== MARK AS MASTERED - NO POPUP, AUTO NEXT ==========
+    
+    async function markMasteredNoPopup(cardId, buttonElement) {
+        // Disable button to prevent double click
+        buttonElement.disabled = true;
+        buttonElement.innerHTML = '⏳ Processing...';
+        buttonElement.style.opacity = '0.6';
+        
+        try {
+            const response = await fetch(`/mark_mastered/${cardId}`);
+            if (response.ok) {
+                // Update the UI without reload
+                updateCardAsMastered(cardId, buttonElement);
+                
+                // Focus on next "Mark as Mastered" button
+                focusNextMasteredButton(buttonElement);
+            } else {
+                buttonElement.disabled = false;
+                buttonElement.innerHTML = '⭐ Mark Mastered';
+                buttonElement.style.opacity = '1';
+                alert('Error marking as mastered. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            buttonElement.disabled = false;
+            buttonElement.innerHTML = '⭐ Mark Mastered';
+            buttonElement.style.opacity = '1';
+            alert('Network error. Please try again.');
+        }
+    }
+    
+    function updateCardAsMastered(cardId, buttonElement) {
+        // Update status badge
+        const statusCell = document.getElementById(`status-${cardId}`);
+        if (statusCell) {
+            statusCell.innerHTML = '<span class="badge" style="background: #27ae60; color: white;">✅ Mastered</span>';
+        }
+        
+        // Remove the mastered button
+        const row = document.getElementById(`card-row-${cardId}`);
+        if (row) {
+            const actionsCell = row.querySelector('td:last-child');
+            const masteredBtn = actionsCell.querySelector('.mastered-btn');
+            if (masteredBtn) {
+                masteredBtn.remove();
+            }
+            // Add mastered class for styling
+            row.classList.add('card-row-mastered');
+        }
+        
+        // Update statistics
+        updateStatistics();
+        
+        // Show success indicator (optional)
+        showTemporaryMessage('✅ Card mastered!', '#27ae60');
+    }
+    
+    function focusNextMasteredButton(currentButton) {
+        // Get all mastered buttons
+        const allMasteredButtons = Array.from(document.querySelectorAll('.mastered-btn:not([disabled])'));
+        
+        // Find current button index
+        const currentIndex = allMasteredButtons.indexOf(currentButton);
+        
+        // Focus on next button if exists
+        if (currentIndex !== -1 && currentIndex + 1 < allMasteredButtons.length) {
+            const nextButton = allMasteredButtons[currentIndex + 1];
+            
+            // Scroll to next button smoothly
+            nextButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Focus on the next button after a slight delay
+            setTimeout(() => {
+                nextButton.focus();
+                nextButton.style.outline = '3px solid #ff9800';
+                setTimeout(() => {
+                    nextButton.style.outline = '';
+                }, 1000);
+            }, 300);
+        } else {
+            // No more mastered buttons - show completion message
+            const remainingButtons = document.querySelectorAll('.mastered-btn').length;
+            if (remainingButtons === 0) {
+                showTemporaryMessage('🎉 All cards mastered! Great job!', '#27ae60');
+            }
+        }
+    }
+    
+    function updateStatistics() {
+        const masteredCards = document.querySelectorAll('.card-row-mastered, .mastered-btn:not([data-card-id])').length;
+        const totalCards = {{ deck.cards|length }};
+        
+        // Count actual mastered cards from status badges
+        const masteredBadges = document.querySelectorAll('#status-\\d+ .badge');
+        let masteredCount = 0;
+        masteredBadges.forEach(badge => {
+            if (badge.innerText.includes('Mastered')) {
+                masteredCount++;
+            }
+        });
+        
+        const progressPercent = Math.round((masteredCount / totalCards) * 100);
+        
+        // Update UI
+        document.getElementById('masteredCount').innerText = masteredCount;
+        document.getElementById('progressPercent').innerText = progressPercent;
+        document.getElementById('progressBar').style.width = progressPercent + '%';
+        document.getElementById('progressText').innerText = progressPercent + '%';
+        document.getElementById('masteredInfo').innerText = `${masteredCount} of ${totalCards} cards mastered`;
+    }
+    
+    function showTemporaryMessage(message, color) {
+        const msgDiv = document.createElement('div');
+        msgDiv.textContent = message;
+        msgDiv.style.position = 'fixed';
+        msgDiv.style.bottom = '20px';
+        msgDiv.style.right = '20px';
+        msgDiv.style.backgroundColor = color;
+        msgDiv.style.color = 'white';
+        msgDiv.style.padding = '10px 20px';
+        msgDiv.style.borderRadius = '25px';
+        msgDiv.style.zIndex = '1000';
+        msgDiv.style.fontWeight = 'bold';
+        msgDiv.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
+        msgDiv.style.animation = 'fadeInOut 2s ease';
+        document.body.appendChild(msgDiv);
+        
+        setTimeout(() => {
+            msgDiv.remove();
+        }, 2000);
+    }
+    
+    function markAllVisibleMastered() {
+        const visibleButtons = Array.from(document.querySelectorAll('.mastered-btn:not([disabled])'));
+        
+        if (visibleButtons.length === 0) {
+            showTemporaryMessage('No cards left to master!', '#f39c12');
+            return;
+        }
+        
+        if (confirm(`Mark ${visibleButtons.length} cards as mastered?`)) {
+            visibleButtons.forEach((btn, index) => {
+                const cardId = btn.getAttribute('data-card-id');
+                setTimeout(() => {
+                    markMasteredNoPopup(cardId, btn);
+                }, index * 200); // Stagger the requests
+            });
+        }
+    }
+    
+    function filterCards() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('#cardsTableBody tr');
+        
+        rows.forEach(row => {
+            const question = row.querySelector('td:nth-child(3)').innerText.toLowerCase();
+            const answer = row.querySelector('td:nth-child(4)').innerText.toLowerCase();
+            
+            if (question.includes(searchTerm) || answer.includes(searchTerm)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    function toggleSelectAll() {
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const checkboxes = document.querySelectorAll('.card-checkbox');
+        checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+    }
+    
+    function showAddCardModal() {
+        document.getElementById('addCardModal').style.display = 'flex';
+        // Auto-focus on question textarea
+        setTimeout(() => {
+            const questionField = document.querySelector('#addCardModal textarea[name="question"]');
+            if (questionField) questionField.focus();
+        }, 100);
+    }
+    
+    function hideAddCardModal() {
+        document.getElementById('addCardModal').style.display = 'none';
+    }
+    
+    function studyAll() {
+        window.location.href = "{{ url_for('study_select', deck_id=deck.id) }}";
+    }
+    
+    function studyCard(cardId) {
+        window.location.href = `/study/start/{{ deck.id }}/all`;
+    }
+    
+    function deleteCard(cardId) {
+        if (confirm('Are you sure you want to delete this card?')) {
+            window.location.href = `/delete_card/${cardId}`;
+        }
+    }
+    
+    // Add keyboard shortcut: 'M' key to mark current card as mastered
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'm' || e.key === 'M') {
+            const focusedElement = document.activeElement;
+            if (focusedElement && focusedElement.classList.contains('mastered-btn')) {
+                focusedElement.click();
+            } else {
+                // Find first visible mastered button
+                const firstMasteredBtn = document.querySelector('.mastered-btn:not([disabled])');
+                if (firstMasteredBtn) {
+                    firstMasteredBtn.focus();
+                    firstMasteredBtn.click();
+                }
+            }
+        }
+        
+        // Ctrl+F to focus search
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            document.getElementById('searchInput').focus();
+        }
+    });
+    
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('addCardModal');
+        if (event.target === modal) {
+            hideAddCardModal();
+        }
+    }
+    
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+        .mastered-btn:focus {
+            outline: 3px solid #ff9800;
+            transform: scale(1.05);
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+{% endblock %}

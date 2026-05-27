@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>📝 Python Quiz</h1>
+<p style="color: rgba(255,255,255,0.9); margin-bottom: 20px;">Test your Python knowledge - Choose by unit or difficulty</p>
+
+<!-- Unit-wise Quizzes -->
+<div class="card">
+    <h2>📚 Unit-wise Quizzes (25 questions each)</h2>
+    <p style="color: #666; margin-bottom: 15px;">Test your knowledge on specific topics</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+        {% for deck in user_decks %}
+        <a href="{{ url_for('quiz_start_deck', deck_id=deck.id) }}" class="btn btn-info" style="text-align: center; text-decoration: none;">
+            📖 {{ deck.name }}
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Full Course Quizzes -->
+<div class="card">
+    <h2>🏆 Full Course Quizzes</h2>
+    <p style="color: #666; margin-bottom: 15px;">Comprehensive tests covering all topics</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+        <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 15px;">
+            <h3>📖 Quick Check</h3>
+            <p>10 Random Questions</p>
+            <p>⏱️ 5 minutes</p>
+            <a href="{{ url_for('quiz_start_all', num=10) }}" class="btn btn-success">Start Quiz</a>
+        </div>
+        <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 15px;">
+            <h3>📚 Standard Test</h3>
+            <p>25 Random Questions</p>
+            <p>⏱️ 12 minutes</p>
+            <a href="{{ url_for('quiz_start_all', num=25) }}" class="btn btn-warning">Start Quiz</a>
+        </div>
+        <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 15px;">
+            <h3>🏆 Challenge Exam</h3>
+            <p>50 Random Questions</p>
+            <p>⏱️ 25 minutes</p>
+            <a href="{{ url_for('quiz_start_all', num=50) }}" class="btn btn-danger">Start Challenge</a>
+        </div>
+    </div>
+</div>
+
+<!-- Progress Summary -->
+<div class="card">
+    <h2>📊 Your Quiz Progress</h2>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ quizzes_taken }}</div>
+            <div>Quizzes Taken</div>
+        </div>
+        <div class="stat-card" style="background: #27ae60;">
+            <div class="stat-number">{{ avg_score }}%</div>
+            <div>Average Score</div>
+        </div>
+        <div class="stat-card" style="background: #3498db;">
+            <div class="stat-number">{{ best_score }}%</div>
+            <div>Best Score</div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

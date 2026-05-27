@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 style="color: white;">🔬 FSRS vs SM-2 Research Dashboard</h1>
+    <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px;">
+        Your actual performance data comparing AI-powered FSRS vs Classic SM-2 algorithms
+    </p>
+
+    {% if not has_data %}
+    <div class="card" style="background: #fff3cd; text-align: center;">
+        <h3>📊 No Study Data Yet</h3>
+        <p>Start studying flashcards to see your performance metrics!</p>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Go Study Now</a>
+    </div>
+    {% else %}
+
+    <!-- Overall Winner Banner -->
+    <div class="card text-center" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+        <h2>🏆 Overall Winner</h2>
+        <div style="font-size: 48px; margin: 20px 0;">{{ overall_winner }}</div>
+        <p>{{ overall_message }}</p>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_cards }}</div>
+            <div>Total Cards</div>
+        </div>
+        <div class="stat-card" style="background: #27ae60;">
+            <div class="stat-number">{{ fsrs_count }}</div>
+            <div>🤖 FSRS Cards</div>
+            <small>{{ fsrs_mastered }} mastered</small>
+        </div>
+        <div class="stat-card" style="background: #3498db;">
+            <div class="stat-number">{{ sm2_count }}</div>
+            <div>📚 SM-2 Cards</div>
+            <small>{{ sm2_mastered }} mastered</small>
+        </div>
+    </div>
+
+    <!-- Study Stats -->
+    <div class="stats-grid">
+        <div class="stat-card" style="background: #f39c12;">
+            <div class="stat-number">{{ streak }}</div>
+            <div>Day Streak 🔥</div>
+        </div>
+        <div class="stat-card" style="background: #9b59b6;">
+            <div class="stat-number">{{ total_studied }}</div>
+            <div>Cards Studied</div>
+        </div>
+        <div class="stat-card" style="background: #1abc9c;">
+            <div class="stat-number">{{ points }}</div>
+            <div>Total Points 🎯</div>
+        </div>
+    </div>
+
+    <!-- Retention Rate Comparison -->
+    <div class="card">
+        <h2>📈 Retention Rate Comparison</h2>
+        <p style="color: #666; margin-bottom: 15px;">Percentage of correct answers (rating Good or Easy)</p>
+        
+        <div style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span>🤖 FSRS</span>
+                <span><strong>{{ fsrs_retention }}%</strong> ({{ total_fsrs_reviews }} reviews)</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-fill" style="width: {{ fsrs_retention }}%; background: #27ae60;">{{ fsrs_retention }}%</div>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span>📚 SM-2</span>
+                <span><strong>{{ sm2_retention }}%</strong> ({{ total_sm2_reviews }} reviews)</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-fill" style="width: {{ sm2_retention }}%; background: #3498db;">{{ sm2_retention }}%</div>
+            </div>
+        </div>
+        
+        <div class="success" style="margin-top: 15px; padding: 10px; border-radius: 8px; background: {{ retention_winner_color }}20;">
+            🏆 Winner: <strong style="color: {{ retention_winner_color }};">{{ retention_winner }}</strong> (Higher is better)
+        </div>
+    </div>
+
+    <!-- Response Time Comparison -->
+    <div class="card">
+        <h2>⏱️ Response Time Comparison</h2>
+        <p style="color: #666; margin-bottom: 15px;">Average time to answer (seconds)</p>
+        
+        <div style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span>🤖 FSRS</span>
+                <span><strong>{{ fsrs_avg_time }}s</strong></span>
+            </div>
+            <div class="progress-bar-container">
+                {% set total_time = fsrs_avg_time + sm2_avg_time %}
+                {% if total_time > 0 %}
+                    <div class="progress-fill" style="width: {{ (fsrs_avg_time / total_time * 100) if fsrs_avg_time > 0 else 0 }}%; background: #27ae60;">{{ fsrs_avg_time }}s</div>
+                {% else %}
+                    <div class="progress-fill" style="width: 0%; background: #27ae60;">0s</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span>📚 SM-2</span>
+                <span><strong>{{ sm2_avg_time }}s</strong></span>
+            </div>
+            <div class="progress-bar-container">
+                {% if total_time > 0 %}
+                    <div class="progress-fill" style="width: {{ (sm2_avg_time / total_time * 100) if sm2_avg_time > 0 else 0 }}%; background: #3498db;">{{ sm2_avg_time }}s</div>
+                {% else %}
+                    <div class="progress-fill" style="width: 0%; background: #3498db;">0s</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="success" style="margin-top: 15px; padding: 10px; border-radius: 8px; background: {{ time_winner_color }}20;">
+            🏆 Winner: <strong style="color: {{ time_winner_color }};">{{ time_winner }}</strong> (Lower is better)
+        </div>
+    </div>
+
+    <!-- Confidence Rating -->
+    <div class="card">
+        <h2>💪 Confidence Score</h2>
+        <p style="color: #666; margin-bottom: 15px;">Based on retention rate and review consistency</p>
+        
+        <div style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span>🤖 FSRS</span>
+                <span><strong>{{ fsrs_confidence }}/5</strong></span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-fill" style="width: {{ (fsrs_confidence / 5) * 100 }}%; background: #27ae60;">{{ fsrs_confidence }}/5</div>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                <span>📚 SM-2</span>
+                <span><strong>{{ sm2_confidence }}/5</strong></span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-fill" style="width: {{ (sm2_confidence / 5) * 100 }}%; background: #3498db;">{{ sm2_confidence }}/5</div>
+            </div>
+        </div>
+        
+        <div class="success" style="margin-top: 15px; padding: 10px; border-radius: 8px; background: {{ confidence_winner_color }}20;">
+            🏆 Winner: <strong style="color: {{ confidence_winner_color }};">{{ confidence_winner }}</strong> (Higher is better)
+        </div>
+    </div>
+
+    <!-- Quiz Stats -->
+    <div class="card">
+        <h2>📝 Quiz Performance</h2>
+        <div class="stats-grid">
+            <div class="stat-card" style="background: #8e44ad;">
+                <div class="stat-number">{{ total_quizzes }}</div>
+                <div>Quizzes Taken</div>
+            </div>
+            <div class="stat-card" style="background: #e67e22;">
+                <div class="stat-number">{{ avg_quiz_score }}%</div>
+                <div>Average Quiz Score</div>
+            </div>
+            <div class="stat-card" style="background: #2ecc71;">
+                <div class="stat-number">{{ best_quiz_score }}%</div>
+                <div>Best Quiz Score</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Comparison Table -->
+    <div class="card">
+        <h2>📋 Detailed Performance Summary</h2>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                        <th style="padding: 12px;">Metric</th>
+                        <th style="padding: 12px;">🤖 FSRS</th>
+                        <th style="padding: 12px;">📚 SM-2</th>
+                        <th style="padding: 12px;">🏆 Winner</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 10px;">Retention Rate (%)</td>
+                        <td style="padding: 10px; font-weight: bold; color: #27ae60;">{{ fsrs_retention }}%</td>
+                        <td style="padding: 10px; font-weight: bold; color: #3498db;">{{ sm2_retention }}%</td>
+                        <td style="padding: 10px;"><span style="color: {{ retention_winner_color }};">{{ retention_winner }}</span></td>
+                    </tr>
+                    <tr style="background: #f8f9fa; border-bottom: 1px solid #ddd;">
+                        <td style="padding: 10px;">Response Time (s)</td>
+                        <td style="padding: 10px;">{{ fsrs_avg_time }}s</td>
+                        <td style="padding: 10px;">{{ sm2_avg_time }}s</td>
+                        <td style="padding: 10px;"><span style="color: {{ time_winner_color }};">{{ time_winner }}</span></td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 10px;">Reviews per Card</td>
+                        <td style="padding: 10px;">{{ fsrs_reviews }}</td>
+                        <td style="padding: 10px;">{{ sm2_reviews }}</td>
+                        <td style="padding: 10px;"><span style="color: {{ reviews_winner_color }};">{{ reviews_winner }}</span></td>
+                    </tr>
+                    <tr style="background: #f8f9fa; border-bottom: 1px solid #ddd;">
+                        <td style="padding: 10px;">Confidence Score (/5)</td>
+                        <td style="padding: 10px;">{{ fsrs_confidence }}/5</td>
+                        <td style="padding: 10px;">{{ sm2_confidence }}/5</td>
+                        <td style="padding: 10px;"><span style="color: {{ confidence_winner_color }};">{{ confidence_winner }}</span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px;">Total Reviews</td>
+                        <td style="padding: 10px;">{{ total_fsrs_reviews }}</td>
+                        <td style="padding: 10px;">{{ total_sm2_reviews }}</td>
+                        <td style="padding: 10px;">-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="card">
+        <h2>💡 Personalized Recommendations</h2>
+        <ul style="margin-left: 20px;">
+            {% for rec in recommendations %}
+                <li style="margin: 8px 0;">{{ rec }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Achievements -->
+    {% if achievements %}
+    <div class="card">
+        <h2>🏆 Achievements Unlocked</h2>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            {% for a in achievements %}
+                <span style="background: #9b59b6; color: white; padding: 8px 20px; border-radius: 25px; font-size: 14px;">{{ a }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- About Algorithms -->
+    <div class="card">
+        <h2>ℹ️ About the Algorithms</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="background: #27ae6010; padding: 15px; border-radius: 10px;">
+                <h3 style="color: #27ae60;">🧠 FSRS (AI-Powered)</h3>
+                <p>Modern AI-powered algorithm that adapts to your memory patterns. Uses 5 parameters to predict forgetting curves and optimize review timing.</p>
+                <small>✅ Better for: Long-term learning, adapting to individual patterns</small>
+            </div>
+            <div style="background: #3498db10; padding: 15px; border-radius: 10px;">
+                <h3 style="color: #3498db;">📚 SM-2 (Classic)</h3>
+                <p>Classic algorithm from 1987 that uses Easiness Factor (EF) to calculate intervals. Simple but effective.</p>
+                <small>✅ Better for: Standardized schedules, simple implementation</small>
+            </div>
+        </div>
+        <div style="margin-top: 15px; padding: 10px; background: #f0f0f0; border-radius: 10px;">
+            <strong>💡 Tip:</strong> The system tracks your performance with both algorithms. Check this dashboard to see which one works better for YOU!
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+
+<style>
+    .progress-bar-container {
+        background: #e0e0e0;
+        border-radius: 10px;
+        height: 30px;
+        overflow: hidden;
+    }
+    .progress-fill {
+        height: 100%;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 10px;
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+        transition: width 0.5s ease;
+    }
+    .stat-card {
+        transition: transform 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+{% endblock %}

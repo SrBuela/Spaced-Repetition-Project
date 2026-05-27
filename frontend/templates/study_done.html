@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card text-center shadow">
+                <div class="card-header bg-success text-white">
+                    <h3>🎉 Session Complete!</h3>
+                </div>
+                <div class="card-body">
+                    <div class="stats mb-4">
+                        <h2>{{ correct }} / {{ total }}</h2>
+                        <h4>Accuracy: {{ acc }}%</h4>
+                        {% if points_earned %}
+                        <div class="alert alert-info mt-3">
+                            💰 Points Earned: <strong>{{ points_earned }}</strong>
+                        </div>
+                        {% endif %}
+                        {% if acc >= 80 %}
+                            <div class="alert alert-success mt-3">
+                                🌟 Excellent! Great job!
+                            </div>
+                        {% elif acc >= 60 %}
+                            <div class="alert alert-info mt-3">
+                                👍 Good work! Keep practicing!
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning mt-3">
+                                📚 Keep studying! You'll get better!
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">
+                            🏠 Back to Dashboard
+                        </a>
+                        <a href="javascript:history.back()" class="btn btn-success btn-lg">
+                            🔄 Study Again
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

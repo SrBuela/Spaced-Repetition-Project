@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width: 700px; margin: 20px auto; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+        <div>
+            <span><strong>Quiz:</strong> {{ deck_name }}</span><br>
+            <span style="font-size: 14px;">Question <strong>{{ current }}</strong> of <strong>{{ total }}</strong></span>
+        </div>
+        <span id="timer" style="font-size: 22px; font-family: monospace; font-weight: bold; background: #f0f0f0; padding: 5px 15px; border-radius: 25px;">--:--</span>
+    </div>
+    
+    <div style="font-size: 20px; margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 12px; line-height: 1.4;">
+        {{ card.question }}
+    </div>
+    
+    <form method="POST" action="{{ url_for('quiz_answer') }}" id="quizForm">
+        <div class="options" style="margin: 15px 0;">
+            {% for option in options %}
+            <label class="option-label" style="display: flex; align-items: center; padding: 12px; margin: 8px 0; background: white; border: 2px solid #e0e0e0; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+                <input type="radio" name="answer" value="{{ option }}" required style="width: 18px; height: 18px; margin-right: 15px; cursor: pointer;">
+                <span class="option-text" style="font-size: 15px; cursor: pointer;">{{ option }}</span>
+            </label>
+            {% endfor %}
+        </div>
+        
+        <div style="margin-top: 15px; text-align: center;">
+            <button type="submit" class="btn btn-success" style="padding: 12px 30px; font-size: 16px; border-radius: 30px;">
+                Submit Answer →
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+    .option-label:hover {
+        background: #f0f0f0;
+        border-color: #667eea;
+        transform: translateX(5px);
+        transition: all 0.2s;
+    }
+    input[type="radio"] {
+        accent-color: #667eea;
+    }
+    .timer-warning {
+        color: #e74c3c;
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    @media (max-width: 768px) {
+        .card { padding: 15px !important; margin: 10px !important; }
+        .option-label { padding: 10px !important; }
+        .option-text { font-size: 14px !important; }
+        .btn-success { padding: 10px 20px !important; font-size: 14px !important; }
+        .timer { font-size: 18px !important; }
+        div[style*="font-size: 20px"] { font-size: 18px !important; margin: 15px 0 !important; padding: 15px !important; }
+    }
+</style>
+
+<script>
+    let timeLeft = {{ time_left }};
+    let timerInterval = setInterval(() => {
+        let minutes = Math.floor(timeLeft / 60);
+        let seconds = timeLeft % 60;
+        let timerDisplay = document.getElementById('timer');
+        timerDisplay.innerText = `${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+        if(timeLeft <= 60) {
+            timerDisplay.classList.add('timer-warning');
+        }
+        if(timeLeft <= 0) {
+            clearInterval(timerInterval);
+            document.getElementById('quizForm').submit();
+        }
+        timeLeft--;
+    }, 1000);
+    
+    // Auto-focus on first radio button when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        const firstRadio = document.querySelector('input[type="radio"]');
+        if (firstRadio) {
+            firstRadio.focus();
+        }
+    });
+</script>
+{% endblock %}

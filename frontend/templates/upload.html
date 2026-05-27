@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+    <h2>📄 Upload Document to "{{ deck.name }}"</h2>
+    <p style="color: #666; margin-bottom: 20px;">
+        Upload a Word document (.docx) to automatically create flashcards.
+        <strong style="color: #9b59b6;">Cards will be automatically split 50/50 between FSRS and SM-2 for fair research comparison!</strong>
+    </p>
+    
+    <div class="card" style="background: #e8f4f8;">
+        <h3>📝 Document Format Guide</h3>
+        <ul style="margin-left: 20px;">
+            <li><strong>Headings</strong> = Questions/Terms</li>
+            <li><strong>Normal text</strong> = Answers/Definitions</li>
+            <li>Questions ending with <strong>?</strong> are auto-detected</li>
+        </ul>
+        <p><strong>Example:</strong></p>
+        <div style="background: white; padding: 10px; border-radius: 5px; font-family: monospace;">
+            <strong style="color: #667eea;">What is Python?</strong> (Heading)<br>
+            A high-level, interpreted programming language. (Normal text)<br><br>
+            <strong style="color: #667eea;">What is a variable?</strong> (Heading)<br>
+            A container for storing data values. (Normal text)
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>📤 Upload Your Document</h3>
+        <form method="POST" enctype="multipart/form-data">
+            <div style="margin: 15px 0; border: 2px dashed #9b59b6; padding: 30px; text-align: center; border-radius: 10px;">
+                <input type="file" name="document" accept=".docx" required>
+                <p style="color: #999; font-size: 12px; margin-top: 10px;">
+                    📎 Only .docx files are supported (Microsoft Word documents)
+                </p>
+                <p style="color: #9b59b6; font-size: 12px; margin-top: 5px;">
+                    🔄 Cards will be automatically split: FSRS ↔ SM-2 alternately
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-success">📤 Upload & Split Between FSRS/SM-2</button>
+                <a href="{{ url_for('view_deck', deck_id=deck.id) }}" class="btn">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

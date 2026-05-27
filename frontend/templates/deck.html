@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+    <h2>📚 {{ deck.name }}</h2>
+    <a href="{{ url_for('dashboard') }}" class="btn">← Back to Dashboard</a>
+</div>
+
+<div class="card">
+    <h3>📝 Cards in this deck ({{ cards|length }} cards)</h3>
+    {% if cards %}
+        {% for card in cards %}
+        <!-- ✅ ADD THE id HERE - this is the line you need -->
+        <div id="card-{{ card.id }}" class="deck-item" style="border-bottom: 1px solid #eee; padding: 15px 0; scroll-margin-top: 100px;">
+            <div>
+                <strong>{{ card.question }}</strong><br>
+                <small>Answer: {{ card.answer[:100] }}{% if card.answer|length > 100 %}...{% endif %}</small><br>
+                <small>Algorithm: {{ card.algorithm }} | Reviews: {{ card.review_count }} | Response Time: {{ "%.2f"|format(card.avg_time) }}s</small>
+                {% if card.is_mastered %}
+                <span style="background: #27ae60; color: white; padding: 2px 8px; border-radius: 15px; font-size: 11px;">✓ Mastered</span>
+                {% endif %}
+            </div>
+            <div>
+                <a href="{{ url_for('delete_card', card_id=card.id) }}" class="btn btn-danger" onclick="return confirm('Delete this card?')">Delete</a>
+                {% if not card.is_mastered %}
+                <a href="{{ url_for('mark_mastered', card_id=card.id) }}" class="btn btn-success">Mark Mastered</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>No cards yet. Add your first card below!</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>➕ Add New Card</h3>
+    <form method="POST" action="{{ url_for('add_card', deck_id=deck.id) }}">
+        <input type="text" name="question" placeholder="Question" required>
+        <textarea name="answer" placeholder="Answer" rows="3" required></textarea>
+        <select name="algorithm">
+            <option value="FSRS">🧠 FSRS (Adaptive)</option>
+            <option value="SM2">📊 SM-2 (Classic)</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Add Card</button>
+    </form>
+</div>
+
+<div style="margin-top: 20px;">
+    <a href="{{ url_for('reset_deck_mastered', deck_id=deck.id) }}" class="btn btn-warning" onclick="return confirm('Reset all mastered status for this deck?')">Reset All Mastered Status</a>
+</div>
+
+<!-- ✅ ADD THIS SCRIPT at the bottom of the file -->
+<script>
+    // Scroll to the card that was just marked mastered
+    if (window.location.hash) {
+        const element = document.querySelector(window.location.hash);
+        if (element) {
+            setTimeout(() => {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+    }
+</script>
+{% endblock %}

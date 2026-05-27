@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 style="color: white;">📚 {{ deck.name }}</h1>
+    <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px;">
+        Choose how you want to study
+    </p>
+
+    <!-- Study Options -->
+    <div class="card">
+        <h2>🚀 Start Studying</h2>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; margin-top: 20px;">
+            <a href="{{ url_for('study_start', deck_id=deck.id, algo='all') }}" class="btn btn-primary" style="padding: 15px 40px; font-size: 18px;">
+                🎯 Study All Cards ({{ fsrs + sm2 }})
+            </a>
+            {% if fsrs > 0 %}
+                <a href="{{ url_for('study_start', deck_id=deck.id, algo='FSRS') }}" class="btn" style="padding: 15px 40px; font-size: 18px; background: #27ae60; color: white;">
+                    🤖 FSRS Cards Only ({{ fsrs }})
+                </a>
+            {% endif %}
+            {% if sm2 > 0 %}
+                <a href="{{ url_for('study_start', deck_id=deck.id, algo='SM2') }}" class="btn" style="padding: 15px 40px; font-size: 18px; background: #3498db; color: white;">
+                    📚 SM-2 Cards Only ({{ sm2 }})
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="card">
+        <h2>📊 Deck Summary</h2>
+        <div class="stats-grid" style="margin-top: 15px;">
+            <div class="stat-card" style="background: #27ae60;">
+                <div class="stat-number">{{ fsrs }}</div>
+                <div>FSRS Cards</div>
+                <small>AI-Powered</small>
+            </div>
+            <div class="stat-card" style="background: #3498db;">
+                <div class="stat-number">{{ sm2 }}</div>
+                <div>SM-2 Cards</div>
+                <small>Classic</small>
+            </div>
+            <div class="stat-card" style="background: #9b59b6;">
+                <div class="stat-number">{{ cards|selectattr('is_mastered', 'equalto', True)|list|length }}</div>
+                <div>Mastered</div>
+                <small>Completed Cards</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn {
+        transition: all 0.3s ease;
+    }
+    .btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    .stat-card {
+        transition: transform 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 style="color: white;">📖 Learning Material</h1>
+    <p style="color: rgba(255,255,255,0.9); margin-bottom: 20px;">
+        Study at your own pace. Questions and answers are displayed together for easy review.
+    </p>
+
+    <!-- Stats Overview -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_mastered }}</div>
+            <div>Cards Mastered</div>
+            <small>out of {{ total_cards }}</small>
+        </div>
+        <div class="stat-card" style="background: #f39c12;">
+            <div class="stat-number">{{ user.stars or 0 }}</div>
+            <div>⭐ Stars Earned</div>
+            <small>1 star per 100 points</small>
+        </div>
+        <div class="stat-card" style="background: #1abc9c;">
+            <div class="stat-number">{{ user.total_points or 0 }}</div>
+            <div>🎯 Total Points</div>
+            <small>+5 to +20 per card</small>
+        </div>
+        <div class="stat-card" style="background: #9b59b6;">
+            <div class="stat-number">{{ user.streak or 0 }}</div>
+            <div>🔥 Day Streak</div>
+            <small>Study daily!</small>
+        </div>
+    </div>
+
+    <!-- Learning Modules -->
+    <div class="card">
+        <h2>📚 Learning Modules</h2>
+        
+        {% for deck in decks %}
+        <div class="module-section">
+            <div class="module-header" onclick="toggleModule({{ loop.index }})">
+                <div class="module-title">
+                    <span class="module-number">{{ loop.index }}</span>
+                    <strong>{{ deck.name }}</strong>
+                </div>
+                <div class="module-stats">
+                    <span class="module-progress">
+                        {% set deck_mastered = deck.cards|selectattr('is_mastered', 'equalto', True)|list|length %}
+                        {% set deck_percent = (deck_mastered / deck.cards|length * 100) if deck.cards|length > 0 else 0 %}
+                        {{ deck_mastered }}/{{ deck.cards|length }} mastered ({{ deck_percent|round|int }}%)
+                    </span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+            </div>
+            
+            <div class="module-content" id="module-{{ loop.index }}" style="display: none;">
+                <div class="questions-grid">
+                    {% for card in deck.cards %}
+                    <div class="flashcard">
+                        <div class="flashcard-question">
+                            <div class="q-number">{{ loop.index }}</div>
+                            <div class="question-text">{{ card.question }}</div>
+                        </div>
+                        <div class="flashcard-answer">
+                            <div class="answer-icon">📝</div>
+                            <div class="answer-text">{{ card.answer }}</div>
+                        </div>
+                        <div class="flashcard-footer">
+                            {% if card.is_mastered %}
+                                <span class="mastered-tag">✅ Mastered</span>
+                            {% endif %}
+                            <span class="review-tag">🔄 {{ card.review_count }} reviews</span>
+                            <span class="time-tag">⏱️ {{ "%.1f"|format(card.avg_time) }}s avg</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .module-section {
+        border: 1px solid #e0e0e0;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        overflow: hidden;
+        background: white;
+    }
+    
+    .module-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .module-header:hover {
+        background: linear-gradient(135deg, #e9ecef, #dee2e6);
+    }
+    
+    .module-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .module-number {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 14px;
+    }
+    
+    .module-stats {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .module-progress {
+        font-size: 13px;
+        color: #666;
+        background: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .toggle-icon {
+        font-size: 16px;
+        color: #667eea;
+        transition: transform 0.3s;
+    }
+    
+    .module-section.active .toggle-icon {
+        transform: rotate(180deg);
+    }
+    
+    .module-content {
+        padding: 20px;
+        border-top: 1px solid #e0e0e0;
+        background: #f8f9fa;
+    }
+    
+    .questions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 20px;
+    }
+    
+    .flashcard {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border: 1px solid #e8ecf1;
+    }
+    
+    .flashcard:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+        border-color: #667eea;
+    }
+    
+    .flashcard-question {
+        padding: 18px 20px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+    }
+    
+    .q-number {
+        background: rgba(255,255,255,0.2);
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 12px;
+        flex-shrink: 0;
+    }
+    
+    .question-text {
+        font-size: 15px;
+        font-weight: 500;
+        line-height: 1.5;
+        flex: 1;
+    }
+    
+    .flashcard-answer {
+        padding: 18px 20px;
+        background: #f0fff4;
+        border-bottom: 1px solid #d4f0e0;
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .answer-icon {
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    
+    .answer-text {
+        font-size: 14px;
+        color: #2d6a4f;
+        line-height: 1.6;
+        flex: 1;
+    }
+    
+    .flashcard-footer {
+        padding: 10px 20px;
+        background: #fafbfc;
+        display: flex;
+        gap: 15px;
+        font-size: 11px;
+        color: #888;
+        border-top: 1px solid #e8ecf1;
+    }
+    
+    .mastered-tag {
+        color: #27ae60;
+        font-weight: 500;
+    }
+    
+    .review-tag, .time-tag {
+        color: #95a5a6;
+    }
+    
+    @media (max-width: 768px) {
+        .questions-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .module-header {
+            flex-direction: column;
+            gap: 10px;
+            text-align: center;
+        }
+        
+        .module-stats {
+            flex-direction: column;
+        }
+        
+        .flashcard-question {
+            flex-direction: column;
+        }
+        
+        .q-number {
+            align-self: flex-start;
+        }
+    }
+    
+    /* Animation */
+    .flashcard {
+        animation: fadeInUp 0.4s ease;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Search highlight */
+    .module-content {
+        transition: all 0.3s ease;
+    }
+</style>
+
+<script>
+    function toggleModule(moduleId) {
+        const content = document.getElementById('module-' + moduleId);
+        const section = content.closest('.module-section');
+        
+        if (content.style.display === 'none' || content.style.display === '') {
+            content.style.display = 'block';
+            section.classList.add('active');
+        } else {
+            content.style.display = 'none';
+            section.classList.remove('active');
+        }
+    }
+    
+    // Open first module by default
+    document.addEventListener('DOMContentLoaded', function() {
+        const firstModule = document.querySelector('.module-section');
+        if (firstModule) {
+            const firstContent = firstModule.querySelector('.module-content');
+            if (firstContent) {
+                firstContent.style.display = 'block';
+                firstModule.classList.add('active');
+            }
+        }
+    });
+</script>
+{% endblock %}
